@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scenarios &amp; Batch CSV — Factory LP Studio</title>
+<meta name="description" content="Interactive 300-scenario regime explorer and offline batch CSV LP re-solver.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23ea7a48'/%3E%3Ctext x='16' y='22' font-family='sans-serif' font-size='17' font-weight='bold' fill='%23fff' text-anchor='middle'%3EZ%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="topbar"><div class="wrap">
+  <a class='brand' href='index.html'><span class="brand-dot">Z</span> Factory LP <i>· Studio</i></a>
+  <nav class="pnav" aria-label="Workspace">
+    <a href='index.html'>Solver Workbench</a>
+    <a aria-current='page' href='data.html'>Scenarios &amp; Batch CSV</a>
+    <a href='results.html'>Stochastic &amp; Sensitivity</a>
+  </nav>
+  <div class="top-actions">
+    <a class="btn-dark" href="index.html">Open Workbench</a>
+    <span class="avatar-badge">LP</span>
+  </div>
+</div></div>
+
+<main id="main">
+
+<section class="app-head"><div class="wrap">
+  <div class="hero-grid">
+    <div>
+      <div class="crumbs">Scenario Portfolio · Local CSV Engine</div>
+      <h1>300-Scenario Regime Map &amp; Batch Solver</h1>
+      <p class="sub">Cross-filter production regimes and profit floors, jump straight into any scenario, or drop a CSV file to re-solve locally.</p>
+    </div>
+    <div class="hero-float">
+      <div class="hero-float-head"><span><b>Dataset Snapshot</b></span><span>300 Instances</span></div>
+      <div class="hero-float-row"><span>Regime Breakdown</span><span class="status-pill ok">143 C · 85 T · 72 Both</span></div>
+      <div class="hero-float-row"><span>Alternative Optima Edges</span><span class="status-pill warn">SCN-009 · 194 · 213</span></div>
+    </div>
+  </div>
+</div></section>
+
+<section style="padding-top:26px"><div class="wrap">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+      <div class="btnrow" style="margin-top:0">
+        <button type="button" class="btn lite" data-regfilt="all" aria-pressed="true">All (300)</button>
+        <button type="button" class="btn lite" data-regfilt="chair" aria-pressed="false">Chairs only</button>
+        <button type="button" class="btn lite" data-regfilt="table" aria-pressed="false">Tables only</button>
+        <button type="button" class="btn lite" data-regfilt="mixed" aria-pressed="false">Both products</button>
+        <button type="button" class="btn lite" data-regfilt="alt" aria-pressed="false">Alt optima (3)</button>
+      </div>
+      <select id="regimeAxes" class="in-lite" aria-label="Regime map axes">
+        <option value="util">Axes: Machine % vs Material %</option>
+        <option value="qty">Axes: Optimal Chairs vs Tables</option>
+        <option value="eff">Axes: Profit/Hour Efficiency</option>
+      </select>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px">
+      <label for="regMinZ" style="font-size:12.5px;font-weight:600">Minimum profit filter:</label>
+      <input id="regMinZ" type="range" min="0" max="15000" step="250" value="0" style="flex:1;min-width:180px;accent-color:#ea7a48">
+      <output id="o_regMinZ" class="mono" style="font-size:13px">≥ ₹0</output>
+      <span id="regMatchCount" class="status-pill ok">300 matching</span>
+    </div>
+
+    <div class="svg-box"><svg id="regimeChart" viewBox="0 0 640 320"></svg></div>
+    <div id="regimeTooltip" class="tooltip-box">Hover over any dot to inspect its optimal plan, or click to launch it directly in the Workbench.</div>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <div class="card">
+    <div class="kicker"><span class="n">↑</span> Offline Batch CSV Re-Solver</div>
+    <h2 style="margin-top:10px">Drop any factory CSV to re-solve locally</h2>
+    <div id="csvDrop" class="dropzone" style="margin-top:14px">
+      <b>Drop a .csv file here</b> or click to browse local files (expects <span class="mono">pc,pt,mc,mt,kc,kt,H,M</span> or the 22-column Factory schema)
+      <input id="csvFile" type="file" accept=".csv,text/csv" style="display:none">
+    </div>
+    <div class="btnrow" style="margin-top:12px">
+      <button type="button" class="btn-dark" id="btnSampleBatch">Run live on 25-scenario sample</button>
+    </div>
+    <div id="batchOut"></div>
+  </div>
+</div></section>
+
+</main>
+<footer class="foot"><div class="wrap">
+  <div><b>Factory LP · Production Studio</b> — Zero-server client-side analytics.</div>
+  <div><a href='index.html'>Solver Workbench</a> · <a href='results.html'>Stochastic &amp; Sensitivity</a></div>
+</div></footer>
+<script src="assets/scenarios.js"></script>
+<script src="assets/lp_core.js"></script>
+<script src="assets/pages.js"></script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stochastic &amp; Sensitivity — Factory LP Studio</title>
+<meta name="description" content="Interactive Two-Stage Stochastic EVPI/VSS simulator, 300-scenario shadow price histograms, and alternative-optima inspector.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23ea7a48'/%3E%3Ctext x='16' y='22' font-family='sans-serif' font-size='17' font-weight='bold' fill='%23fff' text-anchor='middle'%3EZ%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="topbar"><div class="wrap">
+  <a class='brand' href='index.html'><span class="brand-dot">Z</span> Factory LP <i>· Studio</i></a>
+  <nav class="pnav" aria-label="Workspace">
+    <a href='index.html'>Solver Workbench</a>
+    <a href='data.html'>Scenarios &amp; Batch CSV</a>
+    <a aria-current='page' href='results.html'>Stochastic &amp; Sensitivity</a>
+  </nav>
+  <div class="top-actions">
+    <a class="btn-dark" href="index.html">Open Workbench</a>
+    <span class="avatar-badge">LP</span>
+  </div>
+</div></div>
+
+<main id="main">
+
+<section class="app-head"><div class="wrap">
+  <div class="hero-grid">
+    <div>
+      <div class="crumbs">Two-Stage Stochastic Programming · Portfolio Duals</div>
+      <h1>Interactive EVPI/VSS &amp; Dual Distributions</h1>
+      <p class="sub">Tune recourse penalties and subsets to recompute Stochastic EVPI/VSS live, or click shadow-price bars to inspect matching scenarios.</p>
+    </div>
+    <div class="hero-float">
+      <div class="hero-float-head"><span><b>Portfolio Binding Rates</b></span><span>300 Scenarios</span></div>
+      <div class="hero-float-row"><span>Material Capacity Binds</span><span class="status-pill ok">66% (avg ₹19.47/kg)</span></div>
+      <div class="hero-float-row"><span>Machine Capacity Binds</span><span class="status-pill warn">58% (avg ₹13.38/hr)</span></div>
+    </div>
+  </div>
+</div></section>
+
+<section style="padding-top:26px"><div class="wrap">
+  <div class="kicker"><span class="n">E[Z]</span> Two-Stage Stochastic Simulator</div>
+  <div class="card" style="margin-top:12px">
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:center">
+      <div>
+        <label for="stochPen" style="font-size:12.5px;font-weight:600">Recourse shortfall penalty: <output id="o_stochPen" class="mono">25%</output></label>
+        <input id="stochPen" type="range" min="5" max="60" step="5" value="25" style="width:100%;accent-color:#ea7a48">
+      </div>
+      <div>
+        <label for="stochSubset" style="font-size:12.5px;font-weight:600">Scenario portfolio subset:</label>
+        <select id="stochSubset" class="in-lite" style="width:100%;margin-top:4px">
+          <option value="all">All 300 scenarios</option>
+          <option value="mixed">Both-product optima (72)</option>
+          <option value="high">High-profit scenarios (≥ ₹5,000)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div id="stochBox"></div>
+  <div class="svg-box" style="margin-top:16px"><svg id="stochChart" viewBox="0 0 600 150"></svg></div>
+</div></section>
+
+<section><div class="wrap">
+  <div class="kicker"><span class="n">₹</span> Interactive Shadow-Price Histograms (All 300 Scenarios)</div>
+  <p class="sub">Click any bar to inspect the scenarios inside that dual-price bracket and launch them in the Workbench.</p>
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card">
+      <h4>Machine Hour Shadow Price (u₁)</h4>
+      <div class="svg-box"><svg id="histMach" viewBox="0 0 420 175"></svg></div>
+    </div>
+    <div class="card">
+      <h4>Material Kg Shadow Price (u₂)</h4>
+      <div class="svg-box"><svg id="histMat" viewBox="0 0 420 175"></svg></div>
+    </div>
+  </div>
+  <div id="histDetail" class="card" style="margin-top:14px">
+    <p class="note" style="margin:0">Click any histogram bar above to filter matching scenarios here.</p>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <div class="kicker"><span class="n">≈</span> Alternative Optima Explorer (SCN-009 · SCN-194 · SCN-213)</div>
+  <div id="altGrid" class="grid g3" style="margin-top:14px"></div>
+</div></section>
+
+</main>
+<footer class="foot"><div class="wrap">
+  <div><b>Factory LP · Production Studio</b> — Zero-server client-side analytics.</div>
+  <div><a href='index.html'>Solver Workbench</a> · <a href='data.html'>Scenarios &amp; Batch CSV</a></div>
+</div></footer>
+<script src="assets/scenarios.js"></script>
+<script src="assets/lp_core.js"></script>
+<script src="assets/pages.js"></script>
+</body>
+</html>

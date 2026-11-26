@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Factory LP · Production Studio — Interactive Prescriptive Dashboard</title>
+<meta name="description" content="Interactive LP workbench with draggable constraint lines, exact fractions, Simplex pivot trainer, Primal-Dual plots, ILP Branch-and-Bound, MGA, Counterfactuals, Robust LP, Pareto Frontier, and Multi-Product/Period scale-up.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23ea7a48'/%3E%3Ctext x='16' y='22' font-family='sans-serif' font-size='17' font-weight='bold' fill='%23fff' text-anchor='middle'%3EZ%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="topbar"><div class="wrap">
+  <a class='brand' href='index.html'><span class="brand-dot">Z</span> Factory LP <i>· Studio</i></a>
+  <nav class="pnav" aria-label="Workspace">
+    <a aria-current='page' href='index.html'>Solver Workbench</a>
+    <a href='data.html'>Scenarios &amp; Batch CSV</a>
+    <a href='results.html'>Stochastic &amp; Sensitivity</a>
+  </nav>
+  <div class="top-actions">
+    <button type="button" class="icon-pill" id="btnUndo" title="Undo (Ctrl+Z)">↶ Undo</button>
+    <button type="button" class="icon-pill" id="btnRedo" title="Redo (Ctrl+Y)">↷ Redo</button>
+    <button type="button" class="icon-pill" id="btnChallenge" aria-pressed="false">Blind Mode</button>
+    <span class="avatar-badge" title="ABL Prescriptive Studio">LP</span>
+  </div>
+</div></div>
+
+<main id="main">
+
+<section class="app-head"><div class="wrap">
+  <div class="hero-grid">
+    <div>
+      <div class="crumbs">Your overview · Prescriptive Analytics</div>
+      <h1>Production Mix Optimization Studio</h1>
+      <p class="sub">Drag constraint lines on the plot, test alternative mixes, step through Simplex pivots, and stress-test robustness offline.</p>
+      <div class="hero-cta-row">
+        <a class="btn-dark" href="#solverCard">Live Solver Canvas</a>
+        <a class="icon-pill" href="#lab" style="text-decoration:none">Open 5-Tab Research Lab →</a>
+      </div>
+    </div>
+    <div class="hero-float">
+      <div class="hero-float-head">
+        <span><b>Live Decision Signal</b></span>
+        <span>Offline Solver</span>
+      </div>
+      <div class="hero-float-row">
+        <span>Optimal Production Mix</span>
+        <span id="heroMixPill" class="status-pill ok">40 Chairs · 20 Tables</span>
+      </div>
+      <div class="hero-float-row">
+        <span>Primary Bottleneck Shadow</span>
+        <span id="heroDualPill" class="status-pill warn">₹16.67 / Machine hr</span>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<section id="solverCard" style="padding-top:24px"><div class="wrap">
+  <div class="pastel-grid" aria-label="Quick presets">
+    <button type="button" class="pastel-card p-blue" data-preset="base">
+      <div><div class="pastel-title">Base Textbook Mix</div><div class="pastel-sub">40 Chairs · 20 Tables (₹2,200)</div></div>
+      <span class="bundle-tag">Default</span>
+    </button>
+    <button type="button" class="pastel-card p-violet" data-preset="scn9">
+      <div><div class="pastel-title">SCN-009 Alt Optima</div><div class="pastel-sub">Edge-optimal mix (₹2,940)</div></div>
+      <span class="bundle-tag">Alt Optima</span>
+    </button>
+    <button type="button" class="pastel-card p-pink" data-preset="demand">
+      <div><div class="pastel-title">Demand-Capped (≤)</div><div class="pastel-sub">Chair ≤ 32 &amp; Table ≤ 25</div></div>
+      <span class="bundle-tag">Constraint</span>
+    </button>
+    <button type="button" class="pastel-card p-mint" data-preset="scn89">
+      <div><div class="pastel-title">SCN-089 Peak Profit</div><div class="pastel-sub">161 Tables optimal (₹16,905)</div></div>
+      <span class="bundle-tag">Max Profit</span>
+    </button>
+  </div>
+
+<div class="solver">
+  <div class="panel">
+    <h4>Model Parameters</h4>
+    <p class="hint">Double-click any label to reset it. Drag chart lines to resize H or M.</p>
+
+    <div class="pgroup">More presets</div>
+    <select id="presetSel" class="in-dark" aria-label="Load preset scenario">
+      <option value="">— Choose scenario preset —</option>
+      <option value="base">Base Case (40c / 20t · ₹2,200)</option>
+      <option value="scn9">SCN-009 (Alternative optima)</option>
+      <option value="scn194">SCN-194 (Alternative optima)</option>
+      <option value="scn213">SCN-213 (Alternative optima)</option>
+      <option value="scn89">SCN-089 (Peak ₹16,905)</option>
+      <option value="demand">Base + Demand caps (≤)</option>
+      <option value="contract">Base + Min Table Contract (≥)</option>
+    </select>
+
+    <div class="pgroup">Product economics</div>
+    <div class="ctrl"><label for="p_pc">Chair profit (₹)</label>
+      <div class="ctrl-stepper"><button type="button" class="step-btn" data-stepk="pc" data-stepd="-5">−</button><input id="n_pc" class="ctrl-num" type="number" step="1" min="0" value="40" aria-label="Chair profit"><button type="button" class="step-btn" data-stepk="pc" data-stepd="5">+</button></div>
+      <input id="p_pc" type="range" min="0" max="200" step="5" value="40" aria-label="Chair profit slider">
+    </div>
+    <div class="ctrl"><label for="p_pt">Table profit (₹)</label>
+      <div class="ctrl-stepper"><button type="button" class="step-btn" data-stepk="pt" data-stepd="-5">−</button><input id="n_pt" class="ctrl-num" type="number" step="1" min="0" value="30" aria-label="Table profit"><button type="button" class="step-btn" data-stepk="pt" data-stepd="5">+</button></div>
+      <input id="p_pt" type="range" min="0" max="200" step="5" value="30" aria-label="Table profit slider">
+    </div>
+    <div class="ctrl"><label for="p_mc">Chair mach (h)</label>
+      <div class="ctrl-stepper"><button type="button" class="step-btn" data-stepk="mc" data-stepd="-0.5">−</button><input id="n_mc" class="ctrl-num" type="number" step="0.25" min="0" value="2" aria-label="Chair machine hours"><button type="button" class="step-btn" data-stepk="mc" data-stepd="0.5">+</button></div>
+      <input id="p_mc" type="range" min="0" max="6" step="0.5" value="2" aria-label="Chair machine hours slider">
+    </div>
+    <div class="ctrl"><label for="p_mt">Table mach (h)</label>
+      <div class="ctrl-stepper"><button type="button" class="step-btn" data-stepk="mt" data-stepd="-0.5">−</button><input id="n_mt" class="ctrl-num" type="number" step="0.25" min="0" value="1" aria-label="Table machine hours"><button type="button" class="step-btn" data-stepk="mt" data-stepd="0.5">+</button></div>
+      <input id="p_mt" type="range" min="0" max="6" step="0.5" value="1" aria-label="Table machine hours slider">
+    </div>
+    <div class="ctrl"><label for="p_kc">Chair mat (kg)</label>
+      <div class="ctrl-stepper"><button type="button" class="step-btn" data-stepk="kc" data-stepd="-0.5">−</button><input id="n_kc" class="ctrl-num" type="number" step="0.25" min="0" value="1" aria-label="Chair material kg"><button type="button" class="step-btn" data-stepk="kc" data-stepd="0.5">+</button></div>
+      <input id="p_kc" type="range" min="0" max="6" step="0.5" value="1" aria-label="Chair material kg slider">
+    </div>
+    <div class="ctrl"><label for="p_kt">Table mat (kg)</label>
+      <div class="ctrl-stepper"><button type="button" class="step-btn" data-stepk="kt" data-stepd="-0.5">−</button><input id="n_kt" class="ctrl-num" type="number" step="0.25" min="0" value="2" aria-label="Table material kg"><button type="button" class="step-btn" data-stepk="kt" data-stepd="0.5">+</button></div>
+      <input id="p_kt" type="range" min="0" max="6" step="0.5" value="2" aria-label="Table material kg slider">
+    </div>
+
+    <div class="pgroup">Capacity</div>
+    <div class="ctrl"><label for="p_H">Machine (h)</label>
+      <div class="ctrl-stepper"><button type="button" class="step-btn" data-stepk="H" data-stepd="-10">−</button><input id="n_H" class="ctrl-num" type="number" step="1" min="0" value="100" aria-label="Machine hours"><button type="button" class="step-btn" data-stepk="H" data-stepd="10">+</button></div>
+      <input id="p_H" type="range" min="20" max="400" step="10" value="100" aria-label="Machine hours slider">
+    </div>
+    <div class="ctrl"><label for="p_M">Material (kg)</label>
+      <div class="ctrl-stepper"><button type="button" class="step-btn" data-stepk="M" data-stepd="-10">−</button><input id="n_M" class="ctrl-num" type="number" step="1" min="0" value="80" aria-label="Material kg"><button type="button" class="step-btn" data-stepk="M" data-stepd="10">+</button></div>
+      <input id="p_M" type="range" min="20" max="400" step="10" value="80" aria-label="Material kg slider">
+    </div>
+
+    <div class="pgroup">Dynamic constraints (≤, ≥, =)</div>
+    <div style="display:flex;gap:5px;flex-wrap:wrap">
+      <button type="button" class="btn-xs" data-addcons="c_cap">+ Chair cap</button>
+      <button type="button" class="btn-xs" data-addcons="t_cap">+ Table cap</button>
+      <button type="button" class="btn-xs" data-addcons="min_floor">+ Contract ≥</button>
+      <button type="button" class="btn-xs" data-addcons="custom">+ Custom</button>
+    </div>
+    <div id="consList" class="cons-list"></div>
+
+    <div class="pgroup">Saved notebook</div>
+    <div style="display:flex;gap:5px">
+      <input id="nbName" class="in-dark" type="text" placeholder="Save name…" aria-label="Notebook solve name">
+      <button type="button" class="btn-xs" id="btnNbSave">Save</button>
+      <button type="button" class="btn-xs" id="btnExportNb">JSON</button>
+    </div>
+    <div id="nbList" class="notebook-list"></div>
+
+    <div class="row"><button class="btn" id="btnReset">Reset all</button></div>
+    <p class="verdict" id="verdict"></p>
+  </div>
+
+  <div>
+    <div class="toolbar-bar">
+      <div class="pill-group" role="group" aria-label="Number formatting">
+        <button type="button" data-frac="0" aria-pressed="true">Decimals</button>
+        <button type="button" data-frac="1" aria-pressed="false">Exact Fractions (p/q)</button>
+      </div>
+      <span class="note">Grab the orange/blue constraint lines or click inside the shaded polygon.</span>
+    </div>
+
+    <div id="challengeBox" class="challenge-bar" style="display:none">
+      <div id="challengeResult">Click or drag inside the feasible polygon to submit your guess!</div>
+      <button type="button" class="btn-dark" id="btnRevealOpt">Reveal LP Optimum</button>
+    </div>
+
+    <div class="outgrid">
+      <div class="out">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div class="lab">Maximum profit</div>
+          <svg width="56" height="22" viewBox="0 0 56 22" aria-hidden="true">
+            <defs><linearGradient id="spkG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3ca352" stop-opacity=".28"/><stop offset="100%" stop-color="#3ca352" stop-opacity="0"/></linearGradient></defs>
+            <path d="M2,19 L14,15 L26,16 L38,8 L54,3 L54,22 L2,22 Z" fill="url(#spkG)"/>
+            <polyline fill="none" stroke="#1e8e3e" stroke-width="1.8" points="2,19 14,15 26,16 38,8 54,3"/>
+          </svg>
+        </div>
+        <div class="val" id="zVal">₹2,200</div>
+        <div class="sub2">objective value</div>
+      </div>
+      <div class="out"><div class="lab">Chairs (x)</div><div class="val" id="xVal">40.0</div><div class="sub2">units per period</div></div>
+      <div class="out"><div class="lab">Tables (y)</div><div class="val" id="yVal">20.0</div><div class="sub2">units per period</div></div>
+      <div class="out"><div class="lab">Machine shadow</div><div class="val" id="dH">₹16.67</div><div class="sub2" id="slackH">0 h idle</div></div>
+      <div class="out"><div class="lab">Material shadow</div><div class="val" id="dM">₹6.67</div><div class="sub2" id="slackM">0 kg idle</div></div>
+      <div class="out"><div class="lab">Basis</div><div class="val" style="font-size:18px" id="basisOut">two products</div><div class="sub2">corner solution</div></div>
+    </div>
+
+    <div class="meters">
+      <div class="meter">
+        <div class="meter-top"><span>Machine Capacity</span><span id="mTxtH" class="mono">100.0 / 100 h</span></div>
+        <div class="meter-track"><div id="mBarH" class="meter-fill bind" style="width:100%"></div></div>
+      </div>
+      <div class="meter">
+        <div class="meter-top"><span>Raw Material</span><span id="mTxtM" class="mono">80.0 / 80 kg</span></div>
+        <div class="meter-track"><div id="mBarM" class="meter-fill bind" style="width:100%"></div></div>
+      </div>
+    </div>
+
+    <div class="chart"><svg id="lpChart" viewBox="0 0 520 380" role="img" aria-label="Interactive LP feasible region"></svg></div>
+    <div id="chartHud" class="hud-bar"><span>Move cursor over chart for live coordinates, profit &amp; capacity %</span></div>
+
+    <div class="overlay-bar" aria-label="Chart visual overlays">
+      <button type="button" class="btn lite" data-ov="corners" aria-pressed="true">Corner badges</button>
+      <button type="button" class="btn lite" data-ov="grad" aria-pressed="true">∇Z Vector</button>
+      <button type="button" class="btn lite" data-ov="ilp" aria-pressed="false">ILP Lattice</button>
+      <button type="button" class="btn lite" data-ov="mga" aria-pressed="false">MGA Zone</button>
+      <button type="button" class="btn lite" data-ov="robust" aria-pressed="false">Robust Marker</button>
+    </div>
+
+    <div class="chartctl">
+      <button class="btn lite" id="btnSweep">Animate isoprofit</button>
+      <div class="iso-scrub">
+        <span>Scrub Z:</span>
+        <input id="isoScrub" type="range" min="10" max="115" step="1" value="100" aria-label="Scrub isoprofit line">
+      </div>
+      <button class="btn lite" id="btnLink">Copy link</button>
+    </div>
+    <p class="drag-note" id="dragNote">Drag the dot, drag constraint lines, or click corners to inspect profit gaps &amp; inverse prices.</p>
+  </div>
+</div>
+</div></section>
+
+<section id="lab"><div class="wrap">
+  <div class="kicker"><span class="n">◈</span> Research &amp; Sensitivity Modules</div>
+  <div class="lab-tabs" role="tablist" aria-label="Analysis modules">
+    <button type="button" class="lab-tab" role="tab" data-tab="tab-core" aria-selected="true">Core &amp; Sensitivity</button>
+    <button type="button" class="lab-tab" role="tab" data-tab="tab-simplex" aria-selected="false">Simplex, Dual &amp; ILP</button>
+    <button type="button" class="lab-tab" role="tab" data-tab="tab-xai" aria-selected="false">Alternatives &amp; XAI</button>
+    <button type="button" class="lab-tab" role="tab" data-tab="tab-unc" aria-selected="false">Uncertainty, Pareto &amp; ML</button>
+    <button type="button" class="lab-tab" role="tab" data-tab="tab-scale" aria-selected="false">Scale-Up (Multi-Product &amp; Period)</button>
+  </div>
+
+  <!-- TAB 1: CORE & SENSITIVITY -->
+  <div id="tab-core" class="tab-panel active">
+    <div class="grid g2">
+      <div class="card">
+        <h4>Live diagnosis</h4>
+        <div id="explainBody" class="explain"></div>
+      </div>
+
+      <div class="card">
+        <h4>Tornado sensitivity (±10% re-solve)</h4>
+        <div id="tornado" class="tornado"></div>
+        <p class="note" id="torNote" style="margin-top:8px"></p>
+      </div>
+
+      <div class="card">
+        <h4>Basis optimality &amp; RHS ranges</h4>
+        <div class="scroll" style="margin-top:10px"><table class="tbl compact">
+          <thead><tr><th>Input</th><th class="num">Now</th><th class="num">Allow up</th><th class="num">Allow down</th><th class="num">Val up</th><th class="num">Val down</th></tr></thead>
+          <tbody id="rangeBody"></tbody></table></div>
+      </div>
+
+      <div class="card">
+        <h4>Parametric breakpoint curve (click points to apply)</h4>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:4px">
+          <span class="note">Piecewise-linear Z*(v)</span>
+          <select id="paramKey" class="in-lite" aria-label="Parametric sweep parameter">
+            <option value="H">Machine Hours (H)</option>
+            <option value="M">Material Kg (M)</option>
+            <option value="pc">Chair Profit (c₁)</option>
+            <option value="pt">Table Profit (c₂)</option>
+          </select>
+        </div>
+        <div class="svg-box"><svg id="paramChart" viewBox="0 0 440 190"></svg></div>
+        <p class="note" id="paramNote" style="margin-top:6px"></p>
+      </div>
+
+      <div class="card">
+        <h4>Capacity "Make-or-Buy" ROI optimizer</h4>
+        <div class="grid g3" style="gap:8px;margin-top:10px">
+          <label style="font-size:11px">Extra Mach ₹/h <input id="roiCostH" class="in-lite" type="number" value="10" min="0" step="1" style="width:100%"></label>
+          <label style="font-size:11px">Extra Mat ₹/kg <input id="roiCostM" class="in-lite" type="number" value="5" min="0" step="1" style="width:100%"></label>
+          <label style="font-size:11px">Budget ₹ <input id="roiBudget" class="in-lite" type="number" value="400" min="0" step="50" style="width:100%"></label>
+        </div>
+        <div id="roiOut"></div>
+      </div>
+
+      <div class="card">
+        <h4>Pinned comparisons &amp; exports</h4>
+        <div class="btnrow" style="margin-top:8px">
+          <button class="btn lite" id="btnPin">Pin solve</button>
+          <button class="btn lite" id="btnClearPins">Clear</button>
+          <button class="btn lite" id="btnPng">PNG</button>
+          <button class="btn lite" id="btnCsv">CSV</button>
+          <button class="btn lite" id="btnPrint">Print A4</button>
+        </div>
+        <div class="scroll" style="margin-top:10px"><table class="tbl compact">
+          <thead><tr><th>#</th><th class="num">Chairs / tables</th><th class="num">Profit</th><th class="num">Delta</th><th></th></tr></thead>
+          <tbody id="pinBody"></tbody></table></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: SIMPLEX, DUAL & ILP -->
+  <div id="tab-simplex" class="tab-panel">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div>
+          <h4>Two-Phase Simplex tableau &amp; interactive pivot trainer</h4>
+          <p class="note" id="simMeta" style="margin:2px 0 0"></p>
+        </div>
+        <div class="btnrow" style="margin-top:0">
+          <button type="button" class="btn lite" id="btnSimPrev">← Prev</button>
+          <button type="button" class="btn lite" id="btnSimNext">Next →</button>
+          <button type="button" class="btn lite" id="btnSimMode" aria-pressed="false">Student Pivot Mode</button>
+        </div>
+      </div>
+      <div id="simTableau" class="scroll" style="margin-top:12px"></div>
+      <p id="simFeedback" class="note" style="margin-top:8px"></p>
+    </div>
+
+    <div class="grid g2" style="margin-top:16px">
+      <div class="card">
+        <h4>Primal ↔ Dual &amp; complementary slackness</h4>
+        <div id="dualAlg" class="math" style="margin-top:10px;font-size:12px;padding:12px"></div>
+        <div class="svg-box"><svg id="dualChart" viewBox="0 0 400 220"></svg></div>
+        <div class="scroll" style="margin-top:10px"><table class="tbl compact">
+          <thead><tr><th>Constraint</th><th class="num">Slack sᵢ</th><th class="num">Dual uᵢ</th><th class="num">sᵢ · uᵢ</th></tr></thead>
+          <tbody id="dualComp"></tbody>
+        </table></div>
+      </div>
+
+      <div class="card">
+        <h4>2D Integer Programming (ILP) &amp; clickable Branch-and-Bound tree</h4>
+        <div id="ilpSummary" style="margin-top:10px"></div>
+        <div class="svg-box"><svg id="bnbChart" viewBox="0 0 520 190"></svg></div>
+        <p id="bnbNote" class="note" style="margin-top:6px"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: ALTERNATIVES & XAI -->
+  <div id="tab-xai" class="tab-panel">
+    <div class="grid g2">
+      <div class="card">
+        <span class="tagn">Brill et al. (1982) · DeCarolis (2011)</span>
+        <h4>Modeling to Generate Alternatives (MGA — click row to pin)</h4>
+        <div style="display:flex;align-items:center;gap:10px;margin:10px 0">
+          <label for="mgaTol" style="font-size:12px;font-weight:600">Profit tolerance:</label>
+          <input id="mgaTol" type="range" min="1" max="20" step="1" value="5" style="flex:1">
+          <output id="o_mgaTol" class="mono">5%</output>
+        </div>
+        <div class="scroll"><table class="tbl compact">
+          <thead><tr><th>Plan</th><th class="num">Mix</th><th class="num">Profit</th><th class="num">% Opt</th><th class="num">Mach</th><th class="num">Mat</th></tr></thead>
+          <tbody id="mgaBody"></tbody>
+        </table></div>
+      </div>
+
+      <div class="card">
+        <span class="tagn">Kurtz, Birbil &amp; den Hertog (2024)</span>
+        <h4>Counterfactual optimization explainer</h4>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+          <select id="cfTarget" class="in-lite" aria-label="Counterfactual target regime">
+            <option value="chairs">Flip to Chairs-only</option>
+            <option value="tables">Flip to Tables-only</option>
+            <option value="mixed">Flip to Mixed (Both)</option>
+            <option value="target_z">Reach target profit (₹)</option>
+          </select>
+          <div id="cfGoalWrap" style="display:none">
+            <input id="cfTargetZ" class="in-lite" type="number" value="2600" step="100" aria-label="Target profit">
+          </div>
+        </div>
+        <div id="cfOut" style="margin-top:10px"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <span class="tagn">Ahuja &amp; Orlin (2001) — Inverse Optimization</span>
+      <h4>Implied unit profits for any chosen plan (drag dot or edit coordinates)</h4>
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:10px">
+        <label style="font-size:12px">Chosen Chairs x₀: <input id="invX" class="in-lite" type="number" value="50" step="1" min="0" style="width:88px"></label>
+        <label style="font-size:12px">Chosen Tables y₀: <input id="invY" class="in-lite" type="number" value="0" step="1" min="0" style="width:88px"></label>
+      </div>
+      <div id="invOut" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <!-- TAB 4: UNCERTAINTY, PARETO & ML -->
+  <div id="tab-unc" class="tab-panel">
+    <div class="grid g2">
+      <div class="card">
+        <span class="tagn">Bertsimas &amp; Sim (2004)</span>
+        <h4>Budgeted robust optimization (click curve to jump Γ)</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
+          <label style="font-size:11.5px">Uncertainty: <output id="o_robUnc" class="mono">±15%</output>
+            <input id="robUnc" type="range" min="0" max="30" step="5" value="15" style="width:100%">
+          </label>
+          <label style="font-size:11.5px">Budget Γ: <output id="o_robGamma" class="mono">1.00</output>
+            <input id="robGamma" type="range" min="0" max="2" step="0.25" value="1.0" style="width:100%">
+          </label>
+        </div>
+        <div id="robOut"></div>
+        <div class="svg-box"><svg id="robChart" viewBox="0 0 440 175"></svg></div>
+      </div>
+
+      <div class="card">
+        <span class="tagn">Multi-Objective LP (ε-Constraint)</span>
+        <h4>Pareto efficient frontier (click point to enforce cap)</h4>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
+          <label style="font-size:11.5px">Chair impact: <input id="parE1" class="in-lite" type="number" value="3" min="0.5" step="0.5" style="width:70px"></label>
+          <label style="font-size:11.5px">Table impact: <input id="parE2" class="in-lite" type="number" value="2" min="0.5" step="0.5" style="width:70px"></label>
+        </div>
+        <div class="svg-box"><svg id="parChart" viewBox="0 0 440 185"></svg></div>
+        <p id="parNote" class="note" style="margin-top:6px"></p>
+      </div>
+    </div>
+
+    <div class="grid g2" style="margin-top:16px">
+      <div class="card">
+        <h4>Gradient-boosted surrogate vs. exact LP</h4>
+        <div class="grid g3" style="margin-top:10px;gap:10px">
+          <div class="out"><div class="lab">Predicted</div><div class="val" id="surPred">—</div></div>
+          <div class="out"><div class="lab">Exact LP</div><div class="val" id="surExact">—</div></div>
+          <div class="out"><div class="lab">Error</div><div class="val" id="surErr">—</div></div>
+        </div>
+        <div id="surImp" class="imp"></div>
+        <p class="note" id="surWhy" style="margin-top:6px"></p>
+        <p class="note" id="surMeta" style="margin-top:8px"></p>
+        <button class="btn lite" id="btnValidate" style="margin-top:8px">Validate on 25 random cases</button>
+        <p class="note" id="surVal" style="margin-top:8px"></p>
+      </div>
+
+      <div class="card">
+        <span class="tagn">Elmachtoub &amp; Grigas (2021) — SPO+</span>
+        <h4>Decision regret vs. forecast error</h4>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
+          <label for="spoNoise" style="font-size:12px">Forecast profit noise:</label>
+          <input id="spoNoise" type="range" min="10" max="70" step="5" value="45" style="flex:1">
+          <output id="o_spoNoise" class="mono">45%</output>
+        </div>
+        <p id="spoSummary" class="note" style="margin-top:8px"></p>
+        <div class="svg-box"><svg id="spoChart" viewBox="0 0 440 180"></svg></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 5: SCALE-UP -->
+  <div id="tab-scale" class="tab-panel">
+    <div class="grid g2">
+      <div class="card">
+        <span class="tagn">n-Variable Two-Phase Simplex</span>
+        <h4>4-Product Factory Mix</h4>
+        <div class="scroll" style="margin-top:10px">
+          <table class="tbl compact">
+            <thead><tr><th>Product</th><th class="num">Profit ₹</th><th class="num">Mach h</th><th class="num">Mat kg</th><th class="num">Labor h</th></tr></thead>
+            <tbody>
+              <tr><td>Chairs</td><td><input id="mp_p0" class="in-lite scale-in" type="number" value="40" style="width:62px"></td><td><input id="mp_m0" class="in-lite scale-in" type="number" value="2" step="0.5" style="width:55px"></td><td><input id="mp_k0" class="in-lite scale-in" type="number" value="1" step="0.5" style="width:55px"></td><td><input id="mp_l0" class="in-lite scale-in" type="number" value="1.5" step="0.5" style="width:55px"></td></tr>
+              <tr><td>Tables</td><td><input id="mp_p1" class="in-lite scale-in" type="number" value="30" style="width:62px"></td><td><input id="mp_m1" class="in-lite scale-in" type="number" value="1" step="0.5" style="width:55px"></td><td><input id="mp_k1" class="in-lite scale-in" type="number" value="2" step="0.5" style="width:55px"></td><td><input id="mp_l1" class="in-lite scale-in" type="number" value="1" step="0.5" style="width:55px"></td></tr>
+              <tr><td>Desks</td><td><input id="mp_p2" class="in-lite scale-in" type="number" value="65" style="width:62px"></td><td><input id="mp_m2" class="in-lite scale-in" type="number" value="2.5" step="0.5" style="width:55px"></td><td><input id="mp_k2" class="in-lite scale-in" type="number" value="2" step="0.5" style="width:55px"></td><td><input id="mp_l2" class="in-lite scale-in" type="number" value="2" step="0.5" style="width:55px"></td></tr>
+              <tr><td>Cabinets</td><td><input id="mp_p3" class="in-lite scale-in" type="number" value="85" style="width:62px"></td><td><input id="mp_m3" class="in-lite scale-in" type="number" value="3" step="0.5" style="width:55px"></td><td><input id="mp_k3" class="in-lite scale-in" type="number" value="3.5" step="0.5" style="width:55px"></td><td><input id="mp_l3" class="in-lite scale-in" type="number" value="2.5" step="0.5" style="width:55px"></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="grid g3" style="gap:8px;margin-top:10px">
+          <label style="font-size:11px">Machine h <input id="mp_H" class="in-lite scale-in" type="number" value="140" style="width:100%"></label>
+          <label style="font-size:11px">Material kg <input id="mp_M" class="in-lite scale-in" type="number" value="120" style="width:100%"></label>
+          <label style="font-size:11px">Labor h <input id="mp_L" class="in-lite scale-in" type="number" value="110" style="width:100%"></label>
+        </div>
+        <div id="mp4Out"></div>
+      </div>
+
+      <div class="card">
+        <span class="tagn">10-Variable Rolling Horizon LP</span>
+        <h4>3-Month Multi-Period Inventory Plan</h4>
+        <div style="margin-top:8px">
+          <label style="font-size:12px">Holding cost (₹/unit/mo): <input id="per_hold" class="in-lite scale-in" type="number" value="4" min="0" step="1" style="width:72px"></label>
+        </div>
+        <div class="scroll" style="margin-top:10px">
+          <table class="tbl compact">
+            <thead><tr><th>Month</th><th class="num">Chair Cap</th><th class="num">Table Cap</th><th class="num">Mach h</th><th class="num">Mat kg</th></tr></thead>
+            <tbody>
+              <tr><td>Month 1</td><td><input id="per_dx1" class="in-lite scale-in" type="number" value="25" style="width:58px"></td><td><input id="per_dy1" class="in-lite scale-in" type="number" value="15" style="width:58px"></td><td><input id="per_h1" class="in-lite scale-in" type="number" value="110" style="width:62px"></td><td><input id="per_m1" class="in-lite scale-in" type="number" value="95" style="width:62px"></td></tr>
+              <tr><td>Month 2</td><td><input id="per_dx2" class="in-lite scale-in" type="number" value="45" style="width:58px"></td><td><input id="per_dy2" class="in-lite scale-in" type="number" value="25" style="width:58px"></td><td><input id="per_h2" class="in-lite scale-in" type="number" value="100" style="width:62px"></td><td><input id="per_m2" class="in-lite scale-in" type="number" value="80" style="width:62px"></td></tr>
+              <tr><td>Month 3</td><td><input id="per_dx3" class="in-lite scale-in" type="number" value="50" style="width:58px"></td><td><input id="per_dy3" class="in-lite scale-in" type="number" value="30" style="width:58px"></td><td><input id="per_h3" class="in-lite scale-in" type="number" value="90" style="width:62px"></td><td><input id="per_m3" class="in-lite scale-in" type="number" value="75" style="width:62px"></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="perOut"></div>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<section id="explorerSection"><div class="wrap">
+  <h3 id="explorer" style="margin-top:0">300-Scenario quick loader</h3>
+  <div class="btnrow" style="margin-top:8px;align-items:center">
+    <input id="scenSearch" class="in-lite" type="search" placeholder="Search ID (e.g. 009, 089, 213) or profit…" aria-label="Search scenarios" style="min-width:230px">
+    <button class="btn lite" data-filter="all" aria-pressed="true">All 300</button>
+    <button class="btn lite" data-filter="mixed" aria-pressed="false">Both</button>
+    <button class="btn lite" data-filter="chair" aria-pressed="false">Chairs only</button>
+    <button class="btn lite" data-filter="table" aria-pressed="false">Tables only</button>
+    <button class="btn lite" data-filter="alt" aria-pressed="false">Alt optima</button>
+  </div>
+  <div class="scroll" style="max-height:320px;overflow-y:auto;margin-top:12px">
+  <table class="tbl compact">
+  <thead><tr><th>ID</th><th class="num">Chair ₹</th><th class="num">Table ₹</th><th class="num">Chairs</th>
+  <th class="num">Tables</th><th class="num">Profit</th><th class="num">Mach %</th><th class="num">Mat %</th><th>Plan</th></tr></thead>
+  <tbody id="scenBody"></tbody>
+  </table></div>
+  <p class="note" id="scenCount" style="margin-top:8px">300 of 300</p>
+</div></section>
+
+<div id="onepager"></div>
+</main>
+<footer class="foot"><div class="wrap">
+  <div><b>Factory LP · Production Studio</b> — Zero-server offline optimization dashboard.</div>
+  <div><a href='data.html'>Scenarios &amp; Batch CSV</a> · <a href='results.html'>Stochastic &amp; Sensitivity</a></div>
+</div></footer>
+<script>addEventListener("beforeprint",function(){document.querySelectorAll("details").forEach(function(d){d.open=true;});});</script>
+<script src="assets/scenarios.js"></script>
+<script src="assets/lp_core.js"></script>
+<script src="assets/lp.js"></script>
+<script src="assets/surrogate.js"></script>
+<script src="assets/lab.js"></script>
+</body>
+</html>

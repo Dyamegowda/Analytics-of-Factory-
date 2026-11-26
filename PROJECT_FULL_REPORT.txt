@@ -1,0 +1,348 @@
+================================================================================
+FACTORY LP — INTERACTIVE PRESCRIPTIVE OPTIMIZATION STUDIO
+COMPREHENSIVE TECHNICAL, ARCHITECTURAL & WORKFLOW PROJECT REPORT
+================================================================================
+
+Project Title   : Production Mix Optimization via Linear Programming
+                  (Factory LP — Interactive Prescriptive Optimization Studio)
+Course / Track  : Business Intelligence & Analytics (S5CSPE06) — ABL 1
+Institution     : Dept. of Computer Science & Engineering,
+                  Siddaganga Institute of Technology, Tumakuru (2026–27)
+Team            : Dyamegowda D (1SI24AD017), Chirag P (1SI24AD014),
+                  Suhas B S (1SI24AD050), Harsharaj A B (1SI24AD018)
+Live Deployment : https://abl-prescriptive-lp.netlify.app
+Report Date     : 2026-11-25
+
+--------------------------------------------------------------------------------
+1. EXECUTIVE SUMMARY & END GOAL OF THE PROJECT
+--------------------------------------------------------------------------------
+The goal of Factory LP is to transform production-mix decision-making from
+heuristic scheduling into a zero-server, 100% offline-capable, explainable
+prescriptive analytics workbench.
+
+Instead of stopping at descriptive summaries or predictive demand forecasts,
+the application computes exact optimal daily production plans (x = Chairs /
+Product A, y = Tables / Product B), prices scarce manufacturing bottlenecks
+via dual shadow prices, exposes theoretical edge cases (alternative optima,
+primal degeneracy, integrality gaps), and lets planners stress-test decisions
+under parameter uncertainty, counterfactual goals, and multi-period scaling.
+
+Canonical Base Instance:
+  Objective    : Maximize Z = 40x + 30y  (INR per planning period)
+  Constraint 1 : 2x +  y <= 100          (Machine hours available)
+  Constraint 2 :  x + 2y <=  80          (Raw material available, kg)
+  Bounds       : x >= 0, y >= 0
+  Optimum      : x* = 40 Chairs, y* = 20 Tables, Z* = INR 2,200
+  Utilization  : 100% Machine (100/100 h), 100% Material (80/80 kg)
+  Shadow Prices: u1 = INR 16.67 (50/3) per Machine-hr
+                 u2 = INR 6.67  (20/3) per Material-kg
+
+300-Scenario Dataset Findings (Factory_Optimization_Scenarios.csv):
+  - Total Scenarios          : 300 (22 columns)
+  - Chairs-only Optimal      : 143 (47.7%)
+  - Tables-only Optimal      :  85 (28.3%)
+  - Mixed (Both Products)    :  72 (24.0%)
+  - Profit Range             : INR 792 to INR 16,905 (Median: INR 3,442.96)
+  - Average Utilization      : 83.2% Machine, 85.5% Material
+  - Binding Frequency        : Material binds in 198/300 (66.0%),
+                               Machine binds in 174/300 (58.0%)
+  - Average Shadow Prices    : INR 19.47/kg (Material), INR 13.38/h (Machine)
+  - Alternative Optima Cases : 3 scenarios (SCN-009, SCN-194, SCN-213) where
+                               multiple distinct mixes yield identical Z*
+  - Primal Degeneracy Case   : SCN-295 (three constraints intersect at (0, 53),
+                               producing non-unique optimal dual multipliers)
+
+--------------------------------------------------------------------------------
+2. LANGUAGES, TECHNOLOGIES & ARCHITECTURE
+--------------------------------------------------------------------------------
+Design Philosophy:
+  Zero build step, zero npm runtime dependencies, zero CDN/network calls, and
+  full offline execution directly via file:// or static HTTP hosting.
+
+2.1 Core Languages
+  1. HTML5
+     - Semantic structure, ARIA tablists/roles, range/number inputs, details
+       disclosures, and file-drop zones.
+     - Active application pages:
+         * index.html   (466 lines, 30,363 B) — Main Interactive Studio & Lab
+         * data.html    ( 79 lines,  4,326 B) — 300-Scenario Regime Map & CSV
+         * results.html ( 84 lines,  4,217 B) — Stochastic EVPI/VSS & Duals
+         * 404.html     (            2,490 B) — Fallback route
+     - Redirect shims (preserving old links/query/hash after removing PPT text):
+         * model.html, concept.html, submission.html (375 B each -> index.html)
+
+  2. CSS3 (assets/site.css — 20,953 B)
+     - Custom CSS variables (--paper, --ink, --muted, --line, --teal, --amber,
+       --steel, --mono, --serif, --sans).
+     - Responsive CSS Grid (.g2, .g3, .g4, .solver, .meters) and sticky
+       parameter control dock.
+     - Interactive visual states (hover transitions, animated meter bars,
+       clickable histogram bars, draggable SVG cursors, dropzone highlight).
+     - Print stylesheet (@media print) formatting a clean A4 one-page report
+       (#onepager) while hiding navigation, sliders, and interactive toolbars.
+
+  3. Vanilla JavaScript (ES5/ES6, UMD pattern)
+     - assets/lp_core.js   (1,368 lines, 62,746 B) — Core OR & research engine
+     - assets/lp.js        (  678 lines, 31,117 B) — 2D solver & canvas UI
+     - assets/lab.js       (1,089 lines, 53,028 B) — Analysis lab & interactions
+     - assets/pages.js     (  298 lines, 16,973 B) — Regime Map, CSV, Stochastic
+     - assets/scenarios.js (             21,760 B) — Embedded 300-scenario table
+     - assets/surrogate.js (            108,304 B) — Embedded 140-tree GBDT model
+
+  4. SVG (Inline Scalable Vector Graphics)
+     - 11 live dynamically generated charts with zero charting libraries:
+       * #lpChart       — Feasible polygon, constraint lines, MGA zone, ILP
+                          lattice, optimal edge, test point, grad-Z, crosshair
+       * #dualChart     — Dual LP feasible polygon (u1, u2) and dual optimum
+       * #bnbChart      — Interactive clickable Branch-and-Bound tree
+       * #paramChart    — Piecewise-linear parametric sweep Z*(v) with kinks
+       * #robChart      — Bertsimas-Sim Price-of-Robustness curve (Gamma)
+       * #parChart      — Multi-objective Pareto Efficient Frontier
+       * #spoChart      — SPO+ Forecast MAPE vs. True Decision Regret scatter
+       * #regimeChart   — 300-scenario cross-filtered Regime Constellation Map
+       * #stochChart    — Wait-and-See vs. Stochastic RP vs. EEV bar comparison
+       * #histMach      — 300-scenario Machine Shadow Price histogram
+       * #histMat       — 300-scenario Material Shadow Price histogram
+
+  5. Browser Web APIs Used
+     - localStorage        : Persistent saved scenario notebook
+     - FileReader          : Local offline CSV parsing without server uploads
+     - Blob & URL          : Client-side CSV and JSON file downloads
+     - Canvas + XMLSerializer : Converts live SVG #lpChart into 1040x760 PNG
+     - History / Hash URLs : Shareable state permalinks (#p=c1,c2,m1,m2,k1,k2,H,M)
+     - Clipboard API       : One-click link copying with textarea fallback
+     - Pointer Events      : Pointer capture for dragging dots & constraint lines
+     - requestAnimationFrame : Smooth isoprofit line sweep animation
+     - window.print()      : One-click A4 executive summary print layout
+
+  6. Auxiliary Tooling, Data & Hosting
+     - Node.js (v24.21.0)  : Headless verification of UMD solvers & DOM mocks
+     - Python (legacy)     : assets/patch_api.py (initial API hook script)
+     - Embedded ML Model   : Gradient-Boosted Decision Tree ensemble
+                             (140 trees, 16 features, trained on 27,000 sampled
+                              LPs, tested on 3,000; R2=0.9646, MAE=254.1,
+                              MAPE=7.62%)
+     - Netlify Static Host : .netlify/netlify.toml publishing workspace root
+     - Archive Downloads   : downloads/ holds original XLSX/CSV datasets,
+                             ABL_Report_Factory_Production_LP.docx, and
+                             ABL_Factory_LP_Deck.pptx
+
+--------------------------------------------------------------------------------
+3. COMPLETE SYSTEM & MATHEMATICAL WORKFLOW
+--------------------------------------------------------------------------------
+
+3.1 Optimization & Data Processing Pipeline
+  [User Inputs / Preset / URL Hash / Uploaded CSV]
+          |
+          v
+  [assets/lp.js] Syncs sliders, +/- steppers, numeric boxes, extra constraints
+          |      and pushes snapshots onto Undo/Redo stacks (up to 40 states).
+          v
+  [assets/lp_core.js :: solve2D(c, constraints)]
+          |
+          +--> Calls Two-Phase Simplex [solveSimplexN] with Bland anti-cycling
+          |       * If Infeasible -> Runs Phase-I Minimum Relaxation (IIS) LP
+          |         to compute exact minimal Delta-b fixes + "Auto-apply fix".
+          |       * If Unbounded  -> Extracts unbounded ray & clips polygon box.
+          |       * If Optimal    -> Enumerates extreme vertices CCW, detects
+          |         alternative optima edges, extracts duals via reduced costs
+          |         and B^T y = c_B, and computes slacks.
+          v
+  [lp.js :: render() & draw()]
+          |  Updates 6 KPIs, animated utilization meters, and redraws #lpChart
+          |  with overlays (corners, grad-Z, ILP lattice, MGA zone, robust pt).
+          v
+  [lab.js :: window.__labRefresh(P, res)]
+          |  Recomputes all 5 Analysis Lab tabs synchronously:
+          |    Tab 1: Core & Sensitivity (Explain, Tornado, Bisection Ranges,
+          |           Parametric Curve, Make-or-Buy ROI, Pin & Exports)
+          |    Tab 2: Simplex Tableau & Student Pivot Trainer, Primal-Dual
+          |           Complementary Slackness, 2D ILP Branch-and-Bound Tree
+          |    Tab 3: MGA Near-Optimal Explorer, Counterfactual Explainer,
+          |           Inverse Optimization (synced with chart drag/click)
+          |    Tab 4: Bertsimas-Sim Robust LP, Multi-Objective Pareto Frontier,
+          |           GBDT Surrogate vs. Exact LP, SPO+ Decision Regret
+          |    Tab 5: 4-Product Mix & 3-Month Rolling Inventory Scale-Up LP
+
+3.2 Offline Dataset & Stochastic Workflow (data.html & results.html)
+  - On data.html:
+      SCEN (300x14) -> Regime Map SVG (cross-filtered by regime & min profit)
+                    -> Click any dot -> redirects to index.html?scn=<id>
+      Uploaded CSV  -> FileReader -> parseAndSolveCSV() -> runs solve2D across
+                       every row -> outputs binding %, mean duals, alt optima,
+                       and downloadable resolved_scenarios.csv.
+  - On results.html:
+      SCEN (300)    -> stochasticMetrics(rows, penaltyRate) using fast inline
+                       4-constraint vertex evaluation (~195 ms total in Node)
+                    -> Outputs Wait-and-See (WS), Recourse Stochastic Plan (RP),
+                       Expected Value Plan (EEV), EVPI = WS - RP, VSS = RP - EEV
+                    -> Shadow-Price Histograms solve all 300 rows and group
+                       scenarios by dual bracket; clicking any bar lists rows.
+
+--------------------------------------------------------------------------------
+4. ALL 20 PRIORITIZED FEATURES IMPLEMENTED (SOURCE & PURPOSE)
+--------------------------------------------------------------------------------
+Researched from LP web apps (PHPSimplex, ATOZMath, Mathstools, GeoGebra, Desmos,
+ZweigMedia, Cornell gilp, highs-js/glpk.js, Excel Solver), Google Play Store
+OR apps (OR Simplex Step-by-Step Solver, Linprog, Simplex Calculator, Linear
+Programming), and academic Operations Research / XAI papers:
+
+  #01 Dynamic Constraint Builder (<=, >=, = & Demand Caps)
+      File: lp_core.js, lp.js, index.html
+      Solves unlimited-demand gap; supports chair/table caps & contract floors.
+
+  #02 2D Integer Linear Programming (ILP) & Branch-and-Bound Tree
+      File: lp_core.js (solveILP2D), lab.js, index.html
+      Finds exact integer mix, computes rounding cost gap, renders clickable tree.
+
+  #03 Step-by-Step Two-Phase Simplex Tableau & Student Pivot Trainer
+      File: lp_core.js (solveSimplexN), lab.js
+      Shows Phase I/II iterations, theta ratios, Zj-Cj, and interactive pivot test.
+
+  #04 Modeling to Generate Alternatives (MGA) Explorer [Brill et al., 1982]
+      File: lp_core.js (solveMGA), lab.js
+      Shades near-optimal region (e.g. >=95% of Z*) and surfaces distinct mixes.
+
+  #05 Counterfactual Optimization Explainer [Kurtz, Birbil & den Hertog, 2024]
+      File: lp_core.js (solveCounterfactual), lab.js
+      Computes minimal L1 profit shift to flip optimal regime or reach target Z.
+
+  #06 Budgeted Robust Optimization & Price of Robustness [Bertsimas & Sim, 2004]
+      File: lp_core.js (solveRobust2D), lab.js
+      Linearized robust counterpart with Gamma slider [0..2] & Theorem 2 bound.
+
+  #07 Primal <-> Dual Side-by-Side Visualizer & Complementary Slackness
+      File: lp_core.js (buildDual), lab.js
+      Auto-generates algebraic Dual LP, plots 2D Dual polygon, verifies s_i*u_i=0.
+
+  #08 Multi-Product (4-Product) & Multi-Period (3-Month Inventory) Scale-Up LP
+      File: lp_core.js (solveSimplexN), lab.js, index.html
+      Pure-JS n-variable solver supporting Chairs/Tables/Desks/Cabinets and
+      10-variable rolling inventory carryover with holding costs.
+
+  #09 Parametric Capacity & Profit Breakpoint Curves
+      File: lp_core.js (parametricCurve), lab.js
+      Interactive piecewise-linear Z*(v) plot with basis-change breakpoints.
+
+  #10 Capacity "Make-or-Buy" ROI & Budget Optimizer
+      File: lp_core.js (solveCapacityROI), lab.js
+      Maximizes net profit minus expansion spend under hourly/kg supplier quotes.
+
+  #11 Interactive 300-Scenario Regime Constellation Map
+      File: pages.js, data.html
+      Cross-filterable 300-point scatter plot with hover HUD & click-to-load.
+
+  #12 Two-Stage Stochastic Analysis (EVPI & VSS) & Penalty Simulator
+      File: lp_core.js (stochasticMetrics), pages.js, results.html
+      Quantifies value of perfect forecast (EVPI) & stochastic planning (VSS).
+
+  #13 Decision-Focused SPO+ Regret Benchmark [Elmachtoub & Grigas, 2021]
+      File: lp_core.js (spoBenchmark), lab.js
+      Compares profit forecast error (MAPE) against true decision regret across
+      40 noisy trials.
+
+  #14 Inverse Optimization ("Why Was This Plan Chosen?") [Ahuja & Orlin, 2001]
+      File: lp_core.js (solveInverse2D), lab.js
+      Finds minimum L1 implied profits making any dragged/chosen point optimal.
+
+  #15 Multi-Objective Pareto Frontier (Profit vs. Energy/Scrap)
+      File: lp_core.js (solvePareto), lab.js
+      Epsilon-constraint non-dominated trade-off curve with click-to-enforce cap.
+
+  #16 Exact Rational Fraction Arithmetic Mode (p/q Toggle)
+      File: lp_core.js (toFrac), lp.js, lab.js
+      Continued-fraction conversion displaying exact duals (50/3, 20/3) & mixes.
+
+  #17 Infeasibility (IIS Minimum Relaxation) & Unboundedness Diagnostics
+      File: lp_core.js (solve2D), lp.js
+      Finds smallest RHS adjustments to restore feasibility + one-click fix.
+
+  #18 Synced Numeric Inputs, +/- Steppers, & Scenario Explorer Search
+      File: lp.js, index.html
+      Exact numeric entry, double-click reset, Undo/Redo, and scenario search.
+
+  #19 Saved Scenario Notebook & Classic OR Presets (localStorage + JSON)
+      File: lab.js, index.html
+      Persistent browser notebook with JSON export alongside preset instances.
+
+  #20 Client-Side Batch CSV Uploader & Re-Solver
+      File: lp_core.js (parseAndSolveCSV), pages.js, data.html
+      Offline drag-and-drop CSV solver computing batch duals, binding %, & export.
+
+--------------------------------------------------------------------------------
+5. CHRONOLOGICAL LOG OF EVERYTHING WE BUILT TOGETHER
+--------------------------------------------------------------------------------
+Phase 1 — Project Discovery & External Research
+  - Inspected original static ABL 1 site (index, concept, data, model, results,
+    submission, lp.js, lab.js, scenarios.js, surrogate.js, site.css).
+  - Searched LP web apps (PHPSimplex, ATOZMath, GeoGebra, Desmos, ZweigMedia,
+    Mathstools, highs-js/glpk.js, gilp), Google Play Store OR apps (OR Simplex,
+    Linprog, Simplex Calculator), and academic papers (Kurtz et al. 2024,
+    Bertsimas & Sim 2004, Brill et al. 1982, Elmachtoub & Grigas 2021,
+    Ahuja & Orlin 2001, MOLP Pareto).
+  - Cataloged 24 candidate features, then prioritized the Top 20 upon your
+    confirmation.
+
+Phase 2 — Core Engine Implementation & Bug Fixes Discovered by Testing
+  - Authored assets/lp_core.js with UMD exports for both browser and Node.js.
+  - Verified all 300 scenarios against original solve2():
+      * Caught SCN-295 primal degeneracy (non-unique duals (14.25, 0) vs.
+        (7.29, 9.29) both satisfying Strong Duality & Dual Feasibility).
+      * Caught SCN-194 as a 3rd alternative-optima instance alongside SCN-009
+        and SCN-213, and added all three to altSet/altIds.
+      * Fixed Two-Stage Stochastic recourse in stochasticMetrics() so strict
+        inequality WS >= RP >= EEV holds mathematically, then replaced inner
+        Simplex calls with a fast inline 4-constraint vertex solver cutting
+        test execution time down to ~195 ms total.
+
+Phase 3 — Workbench, Dataset & Stochastic Pages
+  - Built 5-tab Analysis Lab on model.html (later promoted to index.html),
+    Regime Map & CSV Re-Solver on data.html, and Stochastic EVPI/VSS + Dual
+    Histograms on results.html (via assets/pages.js).
+
+Phase 4 — PPT Content Removal & High-Interactivity UI Overhaul
+  - Following your PPT slide deck submission, removed all static textbook/PPT
+    prose and converted index.html directly into the Solver Workbench (with
+    clean redirects from model.html, concept.html, and submission.html).
+  - Added direct-manipulation SVG interactions: draggable Machine/Material
+    constraint lines on canvas, live cursor crosshair HUD, click-to-test plan,
+    animated capacity gauges, +/- parameter steppers, double-click reset,
+    Undo/Redo stack (Ctrl+Z / Ctrl+Y), Blind Challenge ("Test Yourself") mode,
+    interactive Isoprofit Z scrubber, clickable B&B/Pareto/Robust/Parametric
+    charts, Regime cross-filters, Stochastic penalty slider, and clickable
+    dual-price histograms.
+
+--------------------------------------------------------------------------------
+6. FILE INVENTORY & VERIFICATION STATUS
+--------------------------------------------------------------------------------
+Workspace Files:
+  index.html                  (30,363 B) — Interactive Solver Workbench & Lab
+  data.html                   ( 4,326 B) — 300-Scenario Regime Map & CSV Solver
+  results.html                ( 4,217 B) — Stochastic Simulator & Dual Histograms
+  model.html / concept.html / submission.html (375 B each) — Redirect shims
+  404.html                    ( 2,490 B) — Fallback page
+  README.txt                  (   444 B) — Quick-start instructions
+  assets/lp_core.js           (62,746 B) — Pure-JS OR/Research engine (1,368 ln)
+  assets/lp.js                (31,117 B) — 2D solver, canvas & gauges (678 ln)
+  assets/lab.js               (53,028 B) — 5-tab interactive lab (1,089 ln)
+  assets/pages.js             (16,973 B) — Data & Results interactivity (298 ln)
+  assets/site.css             (20,953 B) — Responsive & print styling
+  assets/scenarios.js         (21,760 B) — 300 scenarios + BASE + STATS
+  assets/surrogate.js         (108,304 B)— 140-tree GBDT surrogate weights
+  assets/t_edge.js, t_edge2.js, t_range.js — Existing basis/range unit tests
+  downloads/*                 — Original DOCX report, PPTX deck, CSV/XLSX data
+
+All Verification Checks Passed (Node.js v24.21.0, Exit Code 0):
+  [PASS] node --check syntax checks on lp_core.js, lp.js, lab.js, pages.js
+  [PASS] 16-suite core OR & research verification across all 300 scenarios
+         (300/300 CSV exact profit matches; Strong Duality verified on all 300)
+  [PASS] HTML link verification & DOM ID audit (133 total DOM ID lookups
+         verified across lp.js [24], lab.js [89], pages.js [20])
+  [PASS] Browser-VM lifecycle smoke tests on index.html, data.html, results.html
+  [PASS] Original regression scripts: t_edge.js, t_edge2.js, t_range.js
+
+How to Run:
+  1. Offline: Double-click index.html (no server or internet required).
+  2. Local HTTP (for clipboard & history permalinks): npx --yes serve .
+  3. Deploy to Netlify: netlify deploy --prod --dir .
+================================================================================
