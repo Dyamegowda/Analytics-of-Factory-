@@ -1,6 +1,6 @@
 # Factory LP · Production Mix Optimization Studio
 
-**Live App:** https://dyamegowda.github.io/Inter-active-analytics-web-for-factory-data-set-/
+**Live App:** (https://dyamegowda.github.io/Analytics-of-Factory-/#p=40,30,2,1,1,2,100,80)
 
 An offline-first, zero-server **Prescriptive Analytics & Linear Programming** web studio built with **HTML5, CSS3, Vanilla JavaScript, and inline SVG**. Designed to move manufacturing production-mix planning from static spreadsheets to live, explainable decision intelligence across a base factory problem and **300 solved production scenarios**.
 
